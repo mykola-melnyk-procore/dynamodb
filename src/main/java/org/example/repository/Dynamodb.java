@@ -53,7 +53,6 @@ public class Dynamodb {
 
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
         }
         return "";
     }
@@ -69,7 +68,6 @@ public class Dynamodb {
 
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
         }
         System.out.println(tableName + " was successfully deleted!");
     }
@@ -96,10 +94,8 @@ public class Dynamodb {
         } catch (ResourceNotFoundException e) {
             System.err.format("Error: The Amazon DynamoDB table \"%s\" can't be found.\n", tableName);
             System.err.println("Be sure that it exists and that you've typed its name correctly!");
-            System.exit(1);
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
         }
     }
 
@@ -133,7 +129,6 @@ public class Dynamodb {
 
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
         }
     }
 
@@ -155,7 +150,6 @@ public class Dynamodb {
             ddb.deleteItem(deleteReq);
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
         }
     }
 
@@ -186,8 +180,47 @@ public class Dynamodb {
             }
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
         }
+    }
+
+    public static void listAllTables(DynamoDbClient ddb){
+
+        boolean moreTables = true;
+        String lastName = null;
+
+        while(moreTables) {
+            try {
+                ListTablesResponse response = null;
+                if (lastName == null) {
+                    ListTablesRequest request = ListTablesRequest.builder().build();
+                    response = ddb.listTables(request);
+                } else {
+                    ListTablesRequest request = ListTablesRequest.builder()
+                            .exclusiveStartTableName(lastName).build();
+                    response = ddb.listTables(request);
+                }
+
+                List<String> tableNames = response.tableNames();
+                if (tableNames.size() > 0) {
+                    for (String curName : tableNames) {
+                        System.out.format("* %s\n", curName);
+                    }
+                } else {
+                    System.out.println("No tables found!");
+                    System.exit(0);
+                }
+
+                lastName = response.lastEvaluatedTableName();
+                if (lastName == null) {
+                    moreTables = false;
+                }
+
+            } catch (DynamoDbException e) {
+                System.err.println(e.getMessage());
+                System.exit(1);
+            }
+        }
+        System.out.println("\nDone!\n");
     }
 
 }
