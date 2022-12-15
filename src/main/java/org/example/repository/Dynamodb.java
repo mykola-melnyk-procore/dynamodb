@@ -2,14 +2,12 @@ package org.example.repository;
 
 import org.example.record.Person;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.waiters.DynamoDbWaiter;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +38,7 @@ public class Dynamodb {
                 .tableName(tableName)
                 .build();
 
-        String newTable ="";
+        String newTable = "";
         try {
             CreateTableResponse response = ddb.createTable(request);
             DescribeTableRequest tableRequest = DescribeTableRequest.builder()
@@ -73,14 +71,14 @@ public class Dynamodb {
             System.err.println(e.getMessage());
             System.exit(1);
         }
-        System.out.println(tableName +" was successfully deleted!");
+        System.out.println(tableName + " was successfully deleted!");
     }
 
     public static void putItemInTable(DynamoDbClient ddb,
                                       String tableName,
-                                      Person person){
+                                      Person person) {
 
-        HashMap<String,AttributeValue> itemValues = new HashMap<>();
+        HashMap<String, AttributeValue> itemValues = new HashMap<>();
         itemValues.put("PK", AttributeValue.builder().s(person.name()).build());
         itemValues.put("SK", AttributeValue.builder().s(person.name()).build());
         itemValues.put("Age", AttributeValue.builder().n(String.valueOf(person.age())).build());
@@ -93,7 +91,7 @@ public class Dynamodb {
 
         try {
             PutItemResponse response = ddb.putItem(request);
-            System.out.println(tableName +" was successfully updated. The request id is "+response.responseMetadata().requestId());
+            System.out.println(tableName + " was successfully updated. The request id is " + response.responseMetadata().requestId());
 
         } catch (ResourceNotFoundException e) {
             System.err.format("Error: The Amazon DynamoDB table \"%s\" can't be found.\n", tableName);
@@ -105,9 +103,9 @@ public class Dynamodb {
         }
     }
 
-    public static void getDynamoDBItem(DynamoDbClient ddb,String tableName,String key,String keyVal, String key2,String keyVal2 ) {
+    public static void getDynamoDBItem(DynamoDbClient ddb, String tableName, String key, String keyVal, String key2, String keyVal2) {
 
-        HashMap<String,AttributeValue> keyToGet = new HashMap<>();
+        HashMap<String, AttributeValue> keyToGet = new HashMap<>();
         keyToGet.put(key, AttributeValue.builder()
                 .s(keyVal)
                 .build());
@@ -121,7 +119,7 @@ public class Dynamodb {
                 .build();
 
         try {
-            Map<String,AttributeValue> returnedItem = ddb.getItem(request).item();
+            Map<String, AttributeValue> returnedItem = ddb.getItem(request).item();
             if (returnedItem != null) {
                 Set<String> keys = returnedItem.keySet();
                 System.out.println("Amazon DynamoDB table attributes: \n");
@@ -139,8 +137,8 @@ public class Dynamodb {
         }
     }
 
-    public static void deleteDymamoDBItem(DynamoDbClient ddb,String tableName,String key,String keyVal, String key2,String keyVal2 ) {
-        HashMap<String,AttributeValue> keyToGet = new HashMap<>();
+    public static void deleteDymamoDBItem(DynamoDbClient ddb, String tableName, String key, String keyVal, String key2, String keyVal2) {
+        HashMap<String, AttributeValue> keyToGet = new HashMap<>();
         keyToGet.put(key, AttributeValue.builder()
                 .s(keyVal)
                 .build());
@@ -155,6 +153,37 @@ public class Dynamodb {
 
         try {
             ddb.deleteItem(deleteReq);
+        } catch (DynamoDbException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    public static void scanDynamoTable(DynamoDbClient ddb, String tableName) {
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(tableName)
+                .build();
+
+        try {
+            ScanResponse scanResponse = ddb.scan(scanRequest);
+            List<Map<String, AttributeValue>> result = scanResponse.items();
+            int i = 1;
+            for (Map<String, AttributeValue> map : result) {
+
+                if (map != null) {
+                    Set<String> keys = map.keySet();
+
+                    System.out.printf("-------------\nItem %s: \n", i);
+                    i++;
+                    for (String key1 : keys) {
+                        System.out.format("%s: %s\n", key1, map.get(key1).toString());
+
+                    }
+                } else {
+                    System.out.format("No item found!\n");
+                }
+            }
         } catch (DynamoDbException e) {
             System.err.println(e.getMessage());
             System.exit(1);
